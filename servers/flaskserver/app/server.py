@@ -1,7 +1,9 @@
-from flask import Flask, jsonify, request, make_response
 import requests
+from flask import Flask, jsonify, request, make_response
 app = Flask(__name__)
 
+
+print("test123")
 @app.route("/", methods=["GET", "POST"])
 def otherstuff():
 	if request.method == "GET":

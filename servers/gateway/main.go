@@ -34,7 +34,7 @@ func main() {
 	mux.Handle("/v1/flask", flaskProxy)
 	wrapper := handlers.NewLogger(mux)
 
-	log.Printf("Server is listening on %s...", httpsAddr)
+	log.Printf("Tutupoopoo Server is listening on %s...", httpsAddr)
 	log.Fatal(http.ListenAndServe(httpsAddr, wrapper))
 }
 
