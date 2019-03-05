@@ -1,7 +1,6 @@
 package main
 
 import (
-	"ff441/servers/gateway/handlers"
 	"log"
 	"net/http"
 	"net/http/httputil"
