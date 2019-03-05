@@ -23,8 +23,8 @@ func main() {
 	}
 
 	flaskAddr := os.Getenv("FLASKADDR")
-	if len(tradeAddr) == 0 {
-		tradeAddr = "FLASK:80"
+	if len(flaskAddr) == 0 {
+		flaskAddr = "FLASK:80"
 	}
 
 	flaskServerAddr, _ := url.Parse("http://" + flaskAddr)
@@ -40,7 +40,7 @@ func main() {
 
 // CustomDirector returns a function for use in httputil.ReverseProxy which requires a director.
 // ***TO DO: Add in authentication logic from initial assignment.***
-func CustomDirector(target *url.URL, hctx *handlers.HandlerContext) Director {
+func CustomDirector(target *url.URL) Director {
 	return func(r *http.Request) {
 		r.Host = target.Host
 		r.URL.Host = target.Host
