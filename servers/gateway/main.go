@@ -31,10 +31,9 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("/v1/flask", flaskProxy)
-	wrapper := handlers.NewLogger(mux)
 
 	log.Printf("Tutupoopoo Server is listening on %s...", httpsAddr)
-	log.Fatal(http.ListenAndServe(httpsAddr, wrapper))
+	log.Fatal(http.ListenAndServe(httpsAddr, mux))
 }
 
 // CustomDirector returns a function for use in httputil.ReverseProxy which requires a director.
