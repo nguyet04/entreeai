@@ -1,7 +1,6 @@
 package main
 
 import (
-	"ff441/servers/gateway/handlers"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -19,23 +18,28 @@ func main() {
 	// Getting the port to listen in on. We have fake certs just for :443 on https.
 	httpsAddr := os.Getenv("ADDR")
 	if len(httpsAddr) == 0 {
-		httpsAddr = ":80"
+		httpsAddr = ":4000"
 	}
 
 	flaskAddr := os.Getenv("FLASKADDR")
 	if len(flaskAddr) == 0 {
-		flaskAddr = "FLASK:80"
+		flaskAddr = "flask:80"
 	}
+
+	// mongoAddr := os.Getenv("MONGOADDR")
+	// if len(mongoAddr) == 0 {
+	// 	mongoAddr = "MONGO:27017"
+	// }
 
 	flaskServerAddr, _ := url.Parse("http://" + flaskAddr)
 	flaskProxy := &httputil.ReverseProxy{Director: CustomDirector(flaskServerAddr)}
 	mux := http.NewServeMux()
 
 	mux.Handle("/v1/flask", flaskProxy)
-	wrapper := handlers.NewLogger(mux)
 
+	log.Printf(httpsAddr, flaskAddr)
 	log.Printf("Tutupoopoo Server is listening on %s...", httpsAddr)
-	log.Fatal(http.ListenAndServe(httpsAddr, wrapper))
+	log.Fatal(http.ListenAndServe(httpsAddr, mux))
 }
 
 // CustomDirector returns a function for use in httputil.ReverseProxy which requires a director.

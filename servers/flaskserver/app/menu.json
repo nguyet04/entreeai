@@ -1,0 +1,25 @@
+{
+    "food": [
+        {   
+            "name": "pizza",
+            "ingredients": [
+                "pepperoni", "italian sausage", "ham", "beef", "bacon", 
+                "chicken", "onion", "green pepper", "mushroom", "fresh tomato", "black olive", 
+                "green olives", "pineapple", "jalapeno", "banana pepper", "anchovies", 
+                "cheese", "spinach", "sundried tomato", 
+                "garlic", "artichokes"
+            ],
+            "sizes": ["small", "medium", "large", "extra large"]
+        },
+        {   
+            "name":"water",
+            "ingredients":[],
+            "sizes":["small", "medium", "large"]
+        },
+        {
+            "name":"coke",
+            "ingredients": [],
+            "sizes": ["small, medium", "large"]
+        } 
+    ]
+}
