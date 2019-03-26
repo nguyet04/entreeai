@@ -38,7 +38,7 @@ def connection():
 
 
 
-conn, mycursor = connection()
+mycursor, conn = connection()
 
 
 
@@ -55,12 +55,25 @@ def fetch(data):
 
 def insertIntoMenuDatabase():
 	insertFood = "INSERT INTO food (food_name) values (%s)"	
+	insertIngredient = "INSERT INTO ingredient (ingredient_name) values (%s)"	
+
 	insertIngredients = ""
 	insertUnits = ""
 	print("lol")
 	with open('menu.json') as toLoad: 
 		menu = json.load(toLoad)
 		pprint(menu)
+		for item in menu["food"]:
+			print(insertFood % item["name"])
+			mycursor.execute(insertFood, item["name"])
+			conn.commit()
+			newestRowID = mycursor.lastrowid()
+			mycursor.executemany(insertIngredient, item["ingredients"])
+			conn.commit()
+			print(mycursor.rowcount())
+
+
+
 
 
 insertIntoMenuDatabase()
