@@ -55,8 +55,8 @@ def fetch(data):
 
 def insertIntoMenuDatabase():
 	insertFood = "INSERT INTO food (food_name) values (%s)"	
-	insertIngredient = "INSERT INTO ingredient (ingredient_name) values (%s)"	
-
+	insertIngredient = "INSERT INTO ingredients (ingredient_name) values (%s)"	
+	insertFoodIng = "INSERT INTO food_ingredient (food_id, ingredient_ID) vales (%s, %s)"
 	insertIngredients = ""
 	insertUnits = ""
 	print("lol")
@@ -65,12 +65,20 @@ def insertIntoMenuDatabase():
 		pprint(menu)
 		for item in menu["food"]:
 			print(insertFood % item["name"])
-			mycursor.execute(insertFood, item["name"])
+			mycursor.execute(insertFood, (item["name"],))
 			conn.commit()
-			newestRowID = mycursor.lastrowid()
-			mycursor.executemany(insertIngredient, item["ingredients"])
-			conn.commit()
-			print(mycursor.rowcount())
+			newestRowID = mycursor.lastrowid
+			print(newestRowID)
+			for ing in item["ingredients"]:
+				print(insertIngredient % ing)
+				mycursor.execute(insertIngredient, (ing,))
+				conn.commit()
+				newestIngID = mycursor.lastrowid
+				print(newestIngID)
+				print(insertFoodIng % (newestRowID, newestIngID))
+				mycursor.execute(insertFoodIng, (newestRowID, newestIngID))				mycursor.execute(insertFoodIng, (newestRowID, newestIngID,))
+				conn.commit()
+		
 
 
 

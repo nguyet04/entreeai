@@ -8,7 +8,7 @@ export MYSQL_ROOT_PASSWORD="lol"
 # cd ../databases
 # ./builddb.sh
 
-# cd ../app
+cd ../app
 ./buildflask.sh
 
 # docker push gebizar/flaskapp
