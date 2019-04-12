@@ -11,14 +11,6 @@ interpreterURL = "http://34.217.35.254/parse"
 
 print(os.environ["MYSQL_ROOT_PASSWORD"])
 
-# currdb = pymysql.connect(
-# 	host = "127.0.0.1",
-# 	user = "root",
-# 	password = os.environ['MYSQL_ROOT_PASSWORD'],
-# 	db = "entreeai",
-# 	cursorclass = pymysql.cursors.DictCursor
-# )
-
 def connection():
     conn = mysql.connector.connect(
 		host = "flaskdb",
@@ -30,13 +22,6 @@ def connection():
 
     c = conn.cursor()
     return c , conn
-
-# currdb = pymysql.connect(
-# 	host='flaskdb', port=3306, user='root', 
-# 	passwd=os.environ["MYSQL_ROOT_PASSWORD"], db='entreeai'
-# )
-
-
 
 mycursor, conn = connection()
 
@@ -51,40 +36,48 @@ def otherstuff():
 
 
 def fetch(data):
-    print(requests.post(interpreterURL, data=data).content)	
+    return json.loads(requests.post(interpreterURL, data=data).content)
 
 def insertIntoMenuDatabase():
 	insertFood = "INSERT INTO food (food_name) values (%s)"	
 	insertIngredient = "INSERT INTO ingredients (ingredient_name) values (%s)"	
-	insertFoodIng = "INSERT INTO food_ingredient (food_id, ingredient_ID) vales (%s, %s)"
-	insertIngredients = ""
-	insertUnits = ""
-	print("lol")
+	insertFoodIng = "INSERT INTO food_ingredient (food_id, ingredient_ID) values (%s, %s)"
+	insertUnit = "INSERT IGNORE INTO units (unit_name) values (%s)"	
+	insertFoodUnit = "INSERT INTO food_units (food_id, unit_id, price) values (%s, %s, %s)"
 	with open('menu.json') as toLoad: 
 		menu = json.load(toLoad)
 		pprint(menu)
 		for item in menu["food"]:
-			print(insertFood % item["name"])
-			mycursor.execute(insertFood, (item["name"],))
-			conn.commit()
-			newestRowID = mycursor.lastrowid
-			print(newestRowID)
-			for ing in item["ingredients"]:
-				print(insertIngredient % ing)
-				mycursor.execute(insertIngredient, (ing,))
+			try: 
+				print(insertFood % item["name"])
+				mycursor.execute(insertFood, (item["name"],))
 				conn.commit()
-				newestIngID = mycursor.lastrowid
-				print(newestIngID)
-				print(insertFoodIng % (newestRowID, newestIngID))
-				mycursor.execute(insertFoodIng, (newestRowID, newestIngID))				mycursor.execute(insertFoodIng, (newestRowID, newestIngID,))
-				conn.commit()
+				newestRowID = mycursor.lastrowid
+				print(newestRowID)
+				for ing in item["ingredients"]:
+					print(insertIngredient % ing)
+					mycursor.execute(insertIngredient, (ing,))
+					conn.commit()
+					newestIngID = mycursor.lastrowid
+					print(newestIngID)
+					print(insertFoodIng % (newestRowID, newestIngID))
+					mycursor.execute(insertFoodIng, (newestRowID, newestIngID,))				
+					conn.commit()
+				for unit in item["units"]: 
+					print(unit)
+					print(unit["unit"], unit["price"])
+					print(insertUnit % unit["unit"])
+					mycursor.execute(insertUnit, (unit["unit"],))
+					conn.commit()
+					newestUnitID = mycursor.lastrowid
+					print(insertFoodUnit % (newestRowID, newestUnitID, unit["price"]))
+					mycursor.execute(insertFoodUnit, (newestRowID, newestUnitID, unit["price"],))
+			except mysql.connector.Error as error:
+				print("Unsuccessful inserting records into database, time to rolback: {}".format(error))
+				conn.rollback()
 		
-
-
-
-
-
 insertIntoMenuDatabase()
+fetch("Pizza dough, mozzarella cheese, mushrooms")
 
 # def fetch(toInterpret):
 # 	with request.post(interpreterURL, data = toInterpret) as rq:
@@ -111,4 +104,3 @@ insertIntoMenuDatabase()
 # 	cleanSentence = " ".join(word for word in fullList)
 # 	return cleanSentence
 
-# fetch("Pizza dough, mozzarella cheese, mushrooms")

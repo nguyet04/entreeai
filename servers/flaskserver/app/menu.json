@@ -9,17 +9,31 @@
                 "cheese", "spinach", "sundried tomato", 
                 "garlic", "artichokes"
             ],
-            "sizes": ["small", "medium", "large", "extra large"]
+            "units": [
+                {"unit": "small", "price": 8.99},
+                {"unit": "medium", "price": 10.99},
+                {"unit": "large", "price": 12.99},
+                {"unit": "extra large", "price": 14.99}
+            ]
         },
         {   
             "name":"water",
             "ingredients":[],
-            "sizes":["small", "medium", "large"]
+            "units":[
+                {"unit": "small", "price": 1.00},
+                {"unit": "medium", "price": 1.00},
+                {"unit": "large", "price": 1.00}
+            ]
         },
         {
             "name":"coke",
             "ingredients": [],
-            "sizes": ["small, medium", "large"]
+            "units": [
+                {"unit": "small", "price": 1.50},
+                {"unit": "medium", "price": 2.50},
+                {"unit": "large", "price": 3.00},
+                {"unit": "extra large", "price": 3.50}
+            ]
         } 
     ]
 }
