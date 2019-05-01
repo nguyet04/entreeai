@@ -23,12 +23,18 @@ CREATE TABLE IF NOT EXISTS food_ingredient (
     FOREIGN KEY (food_id) REFERENCES food(food_id),
     FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
 );
+
+CREATE TABLE IF NOT EXISTS units (
+    unit_id int NOT NULL auto_increment PRIMARY KEY,
+    unit_name varchar(64) NOT NULL
+);
  
 -- Examples would be like medium, large, x-large
 -- 14 inches, 16 inches
-CREATE TABLE IF NOT EXISTS units (
-    unit_id int NOT NULL auto_increment PRIMARY KEY,
-    unit_name varchar(64) NOT NULL,
-    quantity int
+CREATE TABLE IF NOT EXISTS food_units (
+    food_id int NOT NULL,
+    unit_id int NOT NULL,
+    price DECIMAL(13, 2),
+    FOREIGN KEY (food_id) REFERENCES food(food_id),
+    FOREIGN KEY (unit_id) REFERENCES units(unit_id)
 );
-

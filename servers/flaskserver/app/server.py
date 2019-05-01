@@ -1,23 +1,20 @@
 from flask import Flask, jsonify, request, make_response
 from pprint import pprint
+from difflib import SequenceMatcher
 import os, mysql.connector, requests, json
+
 
 # from spellchecker import SpellChecker
 app = Flask(__name__)
 
 interpreterURL = "http://34.217.35.254/parse"
-# if __name__ == '__main__':
-#     app.run(debug=False, host='0.0.0.0')
-
-print(os.environ["MYSQL_ROOT_PASSWORD"])
-
 def connection():
     conn = mysql.connector.connect(
 		host = "flaskdb",
 		user = 'root',
 		password = os.environ["MYSQL_ROOT_PASSWORD"],
 		database = 'entreeai',
-		auth_plugin='mysql_native_password'
+		auth_plugin = 'mysql_native_password'
 	)
 
     c = conn.cursor()
@@ -25,18 +22,49 @@ def connection():
 
 mycursor, conn = connection()
 
+def findIntent(dataArr):
+	print("DATAARR", dataArr)
+	allFoods = []
+	query = "SELECT \
+		food_name, \
+		ingredient_name \
+		FROM food_ingredient fi \
+		INNER JOIN  food f ON f.food_id = fi.food_id \
+		INNER JOIN  ingredients i ON i.ingredient_id = fi.ingredient_id \
+		WHERE food_name = %s"
+	for item in dataArr:
+		newFood = {}
+		print("Food", item["food"])
+		item["food"] = str.lower(item["food"])
+		if item["food"].endswith("es"):
+			item["food"] = item["food"][:len(item["food"])-1]
+		elif item["food"].endswith("s"):
+			item["food"] = item["food"][:len(item["food"])]
+		newFood["food_name"] = item["food"]
+
+		print(query % item["food"])
+		mycursor.execute(query, (item["food"],))
+		result = mycursor.fetchall()
+		foundIngredients = []
+		missingIngredients = []
+		for orderIng in item["ingredients"]:
+			size = len(foundIngredients)
+			for ing in result:
+				print("FIRST ING", ing)
+				print(item["ingredients"])
+				if SequenceMatcher(None, ing[1], orderIng).ratio() > 0.7:
+					foundIngredients.append(ing[1])
+					break
+			if len(foundIngredients) == size:
+				missingIngredients.append(orderIng)
 
 
-@app.route("/", methods=["GET", "POST"])
-def otherstuff():
-	if request.method == "GET":
-		return "methodone"
-	elif request.method == "POST":
-		return "methodtwo"
-
-
-def fetch(data):
-    return json.loads(requests.post(interpreterURL, data=data).content)
+		newFood["found_ingredients"] = foundIngredients
+		newFood["not_found_ingredients"] = missingIngredients
+		allFoods.append(newFood)
+		# pprint(newFood)
+	print("FINDING ALL:", allFoods)	
+	return allFoods
 
 def insertIntoMenuDatabase():
 	insertFood = "INSERT INTO food (food_name) values (%s)"	
@@ -46,61 +74,54 @@ def insertIntoMenuDatabase():
 	insertFoodUnit = "INSERT INTO food_units (food_id, unit_id, price) values (%s, %s, %s)"
 	with open('menu.json') as toLoad: 
 		menu = json.load(toLoad)
-		pprint(menu)
+		# pprint(menu)
 		for item in menu["food"]:
 			try: 
-				print(insertFood % item["name"])
 				mycursor.execute(insertFood, (item["name"],))
 				conn.commit()
 				newestRowID = mycursor.lastrowid
-				print(newestRowID)
 				for ing in item["ingredients"]:
-					print(insertIngredient % ing)
 					mycursor.execute(insertIngredient, (ing,))
 					conn.commit()
 					newestIngID = mycursor.lastrowid
-					print(newestIngID)
-					print(insertFoodIng % (newestRowID, newestIngID))
 					mycursor.execute(insertFoodIng, (newestRowID, newestIngID,))				
 					conn.commit()
 				for unit in item["units"]: 
-					print(unit)
-					print(unit["unit"], unit["price"])
-					print(insertUnit % unit["unit"])
 					mycursor.execute(insertUnit, (unit["unit"],))
 					conn.commit()
 					newestUnitID = mycursor.lastrowid
-					print(insertFoodUnit % (newestRowID, newestUnitID, unit["price"]))
 					mycursor.execute(insertFoodUnit, (newestRowID, newestUnitID, unit["price"],))
 			except mysql.connector.Error as error:
 				print("Unsuccessful inserting records into database, time to rolback: {}".format(error))
 				conn.rollback()
-		
-insertIntoMenuDatabase()
-fetch("Pizza dough, mozzarella cheese, mushrooms")
 
-# def fetch(toInterpret):
-# 	with request.post(interpreterURL, data = toInterpret) as rq:
-# 		body = rq.text
-# 		if rq.status_code != 200: 
-# 			print("Non-valid response code")
-# 			res = make_response("Bad Request", 400)
-# 			return
-# 		print("now we're cookin good lookin")
-# 		res = make_response("Success", 200)
-# 		print(body)
-# 		# Headers, if any, go here.
+def fetch(stringInput):
+	return requests.post('http://34.217.35.254/parse', data=stringInput).content
 
-# def sentenceCleaner(inputString):
-# 	strList = inputString.split()
-# 	spell = SpellChecker()
-# 	fullList = [""] * len(strList)
-# 	for i, word in enumerate(strList):
-# 		if spell.correction(word):
-# 			fullList[i] = spell.correction(word)
-# 		else: 
-# 			fullList[i] = word
-		
-# 	cleanSentence = " ".join(word for word in fullList)
-# 	return cleanSentence
+# insertIntoMenuDatabase()
 
+
+@app.before_first_request
+def activate_job():
+	insertIntoMenuDatabase()
+
+
+@app.route("/v1/flask/test")
+def test():
+	return 'Hello World!'
+
+@app.route("/v1/flask/item", methods=["POST"])
+def item_check():
+	print("1", request.get_json())
+	request.get_json()
+	utterance = request.get_json()["order_utterance"]
+	parsedUtterance = json.loads(fetch(utterance))
+	print(parsedUtterance)
+	finalResult = jsonify(findIntent(parsedUtterance))
+	print(finalResult)
+	return finalResult
+
+
+
+if __name__ == '__main__':
+    app.run(host="flaskapp", port=80, debug=False)

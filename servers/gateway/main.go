@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -23,7 +24,7 @@ func main() {
 
 	flaskAddr := os.Getenv("FLASKADDR")
 	if len(flaskAddr) == 0 {
-		flaskAddr = "flask:80"
+		flaskAddr = "flaskapp:80"
 	}
 
 	// mongoAddr := os.Getenv("MONGOADDR")
@@ -36,9 +37,12 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.Handle("/v1/flask", flaskProxy)
+	mux.Handle("/v1/flask/", flaskProxy)
+
+	mux.HandleFunc("/v1/test", entryPointMethod)
 
 	log.Printf(httpsAddr, flaskAddr)
-	log.Printf("Tutupoopoo Server is listening on %s...", httpsAddr)
+	log.Printf("Gateway Server is listening on %s...", httpsAddr)
 	log.Fatal(http.ListenAndServe(httpsAddr, mux))
 }
 
@@ -50,4 +54,10 @@ func CustomDirector(target *url.URL) Director {
 		r.URL.Host = target.Host
 		r.URL.Scheme = target.Scheme
 	}
+}
+
+func entryPointMethod(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("Hello")
+	w.Write([]byte("Hello"))
+
 }

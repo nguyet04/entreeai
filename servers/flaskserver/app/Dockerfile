@@ -14,9 +14,9 @@ WORKDIR /app
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
 # Make port 80 available to the world outside this container
-EXPOSE 5000
+EXPOSE 80
 
 ENTRYPOINT ["python"]
 
 # Run app.py when the container launches
-CMD ["server.py"]
+CMD ["-u", "server.py"]

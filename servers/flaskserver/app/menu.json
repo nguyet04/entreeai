@@ -3,11 +3,11 @@
         {   
             "name": "pizza",
             "ingredients": [
-                "pepperoni", "italian sausage", "ham", "beef", "bacon", 
-                "chicken", "onion", "green pepper", "mushroom", "fresh tomato", "black olive", 
+                "pepperoni", "italian sausage", "ham", "steak", "bacon", 
+                "chicken", "onion", "green pepper", "mushroom", "fresh tomato", "black olive", "olives",
                 "green olives", "pineapple", "jalapeno", "banana pepper", "anchovies", 
-                "cheese", "spinach", "sundried tomato", 
-                "garlic", "artichokes"
+                "cheese", "spinach", "sundried tomato", "tomato",
+                "garlic", "artichoke"
             ],
             "units": [
                 {"unit": "small", "price": 8.99},

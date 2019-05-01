@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 export SQLADDR="sql:3306"
-export FLASKADDR="flask:5000"
+export FLASKADDR="flaskapp:80"
 export MYSQL_ROOT_PASSWORD="flasktest"
 
 
@@ -18,8 +18,11 @@ cd ../app
 docker rm -f flaskapp
 docker rm -f flaskdb
 
-docker network rm sharednetwork
-docker network create sharednetwork
+# docker network rm sharednetwork
+# docker network create sharednetwork
+
+cd ../../gateway
+./deploy.sh
 
 docker run -d \
 --name flaskdb \
@@ -29,7 +32,7 @@ docker run -d \
 -p 3306:3306 \
 gebizar/flaskdb
 
-sleep 20
+sleep 30
 
 docker run -d \
 --name flaskapp \
@@ -38,3 +41,5 @@ docker run -d \
 -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
 -e SQLADDR=$SQLADDR \
 gebizar/flaskapp
+
+
