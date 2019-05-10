@@ -7,7 +7,7 @@ import os, mysql.connector, requests, json
 # from spellchecker import SpellChecker
 app = Flask(__name__)
 
-interpreterURL = "http://34.217.35.254/parse"
+API_KEY = "https://nlu.entree.ai/staging/parse"
 def connection():
     conn = mysql.connector.connect(
 		host = "flaskdb",
@@ -16,7 +16,6 @@ def connection():
 		database = 'entreeai',
 		auth_plugin = 'mysql_native_password'
 	)
-
     c = conn.cursor()
     return c , conn
 
@@ -26,102 +25,149 @@ def findIntent(dataArr):
 	print("DATAARR", dataArr)
 	allFoods = []
 	query = "SELECT \
-		food_name, \
-		ingredient_name \
-		FROM food_ingredient fi \
-		INNER JOIN  food f ON f.food_id = fi.food_id \
-		INNER JOIN  ingredients i ON i.ingredient_id = fi.ingredient_id \
-		WHERE food_name = %s"
+		food.food_id, \
+		food.food_name, \
+		other_names.fo_name, \
+		food.price \
+		FROM other_names \
+		INNER JOIN food ON other_names.food_id = food.food_id \
+		WHERE food_name = %s \
+		OR fo_name = %s"
+	shakequery = "SELECT \
+		food.food_id, \
+		food.food_name, \
+		other_names.fo_name, \
+		food.price, \
+		flavors.flavor_name \
+		FROM other_names \
+		INNER JOIN food ON other_names.food_id = food.food_id \
+		INNER JOIN flavors on other_names.food_id = flavors.food_id \
+		WHERE (food_name = %s OR fo_name = %s) \
+		AND flavor_name = %s"
+	foundFoods = []
+	missingFoods = []
 	for item in dataArr:
-		newFood = {}
-		print("Food", item["food"])
-		item["food"] = str.lower(item["food"])
-		if item["food"].endswith("es"):
-			item["food"] = item["food"][:len(item["food"])-1]
-		elif item["food"].endswith("s"):
-			item["food"] = item["food"][:len(item["food"])]
-		newFood["food_name"] = item["food"]
-
-		print(query % item["food"])
-		mycursor.execute(query, (item["food"],))
-		result = mycursor.fetchall()
-		foundIngredients = []
-		missingIngredients = []
-		for orderIng in item["ingredients"]:
-			size = len(foundIngredients)
-			for ing in result:
-				print("FIRST ING", ing)
-				print(item["ingredients"])
-				if SequenceMatcher(None, ing[1], orderIng).ratio() > 0.7:
-					foundIngredients.append(ing[1])
-					break
-			if len(foundIngredients) == size:
-				missingIngredients.append(orderIng)
-
-
-		newFood["found_ingredients"] = foundIngredients
-		newFood["not_found_ingredients"] = missingIngredients
-		allFoods.append(newFood)
+		print("Food Name", item["name"])
+		item["name"] = str.lower(item["name"])
+		print("52, ITEM NAME", item["name"])
+		if "shake" in item["name"]:
+			shake_item = item["name"].split()
+			print("SHAKE_ITEM", shake_item)
+			if len(shake_item) > 1:
+				print("PRINT SHAKE", shakequery % (shake_item[1], shake_item[1], shake_item[0]))
+				mycursor.execute(shakequery, (shake_item[1], shake_item[1], item[0],))
+			elif len(item["nested"]) > 0:
+				print("PRINT OTHER SHAKE", shakequery % (shake_item[1], shake_item[1], item["nested"][0]))
+				mycursor.execute(shakequery, (shake_item[1], shake_item[1], item["nested"][0],))
+			else:
+				mycursor.execute(shakequery, (shake_item[1], shake_item[1], "vanilla",))
+			result = mycursor.fetchone()
+			shakeItemString = " ".join(shake_item)
+			if result is None:
+				missingFoods.append(shakeItemString)
+			else:
+				newFood = {}
+				newFood["food_name"] = result[4] + " " + result[1]
+				newFood["price"] = result[3]
+				print("NEW SHAKE FOOD", newFood)
+		elif item["brand"] is not None and (item["name"] == "soda" or item["name"] == "pop"):
+			item["brand"] = str.lower(item["brand"])
+			print("SODA WITH BRAND", query % (item["name"], item["brand"]))
+			mycursor.execute(query, (item["name"], item["brand"],))
+			if result is None:
+				missingFoods.append(shakeItemString)
+			else:
+				newFood = {}
+				if result[2] is not None:
+					newFood["food_name"] = result[2]
+				else:
+					newFood["food_name"] = result[1]
+				newFood["price"] = result[3]
+				print(newFood)
+				foundFoods.append(newFood)
+		else:
+			print("FOOD W ", query % (item["name"], item["name"]))
+			mycursor.execute(query, (item["name"], item["name"],))
+			result = mycursor.fetchone()
+			if result is None:
+				missingFoods.append(item["name"])
+			else: 
+				newFood = {}
+				print("FOUND FOOD", result)
+				if result[1] == "soda" and result[1] is not None:
+					newFood["food_name"] = result[2]
+				elif result[1] == "soda" or result[2] == "pop":
+					newFood["food_name"] = "coke"
+				else:	
+					newFood["food_name"] = result[1]
+				newFood["food_price"] = result[3]
+				print("food price", result[3])
+				foundFoods.append(newFood)
 		# pprint(newFood)
-	print("FINDING ALL:", allFoods)	
-	return allFoods
+	print("FINDING ALL:", foundFoods)
+	print("MISSING FOOD", missingFoods)
+	return foundFoods
 
 def insertIntoMenuDatabase():
-	insertFood = "INSERT INTO food (food_name) values (%s)"	
-	insertIngredient = "INSERT INTO ingredients (ingredient_name) values (%s)"	
-	insertFoodIng = "INSERT INTO food_ingredient (food_id, ingredient_ID) values (%s, %s)"
-	insertUnit = "INSERT IGNORE INTO units (unit_name) values (%s)"	
-	insertFoodUnit = "INSERT INTO food_units (food_id, unit_id, price) values (%s, %s, %s)"
-	with open('menu.json') as toLoad: 
+	insertFood = "INSERT IGNORE INTO food (food_name, price) values (%s, %s)"
+	insertOtherName = "INSERT IGNORE INTO other_names (fo_name, food_id) values (%s, %s)"
+	insertUnit = "INSERT IGNORE INTO units (unit_name, price, food_id) values (%s, %s, %s)"
+	insertFlavor = "INSERT IGNORE INTO flavors (flavor_name, food_id) values (%s, %s)"
+
+	with open('dicks.json') as toLoad:
 		menu = json.load(toLoad)
-		# pprint(menu)
 		for item in menu["food"]:
-			try: 
-				mycursor.execute(insertFood, (item["name"],))
-				conn.commit()
+			try:
+				print(insertFood % (item["name"],item["price"]))
+				mycursor.execute(insertFood, (item["name"], item["price"]))
 				newestRowID = mycursor.lastrowid
-				for ing in item["ingredients"]:
-					mycursor.execute(insertIngredient, (ing,))
-					conn.commit()
-					newestIngID = mycursor.lastrowid
-					mycursor.execute(insertFoodIng, (newestRowID, newestIngID,))				
-					conn.commit()
-				for unit in item["units"]: 
-					mycursor.execute(insertUnit, (unit["unit"],))
-					conn.commit()
-					newestUnitID = mycursor.lastrowid
-					mycursor.execute(insertFoodUnit, (newestRowID, newestUnitID, unit["price"],))
+				print(newestRowID)
+				for other_name in item["other_names"]:
+					print(insertOtherName % (other_name, newestRowID))
+					mycursor.execute(insertOtherName, (other_name, newestRowID, ))
+				if "units" in item:
+					for unit in item["units"]:
+						print(insertUnit % (unit["name"], unit["price"], newestRowID))
+						mycursor.execute(insertUnit, (unit["name"], unit["price"], newestRowID,))
+				if "flavors" in item:
+					for flav in item["flavors"]:
+						print(insertFlavor % (flav, newestRowID))
+						mycursor.execute(insertFlavor, (flav, newestRowID,))
 			except mysql.connector.Error as error:
 				print("Unsuccessful inserting records into database, time to rolback: {}".format(error))
 				conn.rollback()
+			conn.commit()
+
+insertIntoMenuDatabase();
 
 def fetch(stringInput):
-	return requests.post('http://34.217.35.254/parse', data=stringInput).content
+	return requests.post(API_KEY, json={"data": stringInput}).json()
+findIntent(fetch("I want a plain burger and a fanta"))
 
 # insertIntoMenuDatabase()
 
 
-@app.before_first_request
-def activate_job():
-	insertIntoMenuDatabase()
+# @app.before_first_request
+# def activate_job():
+# 	insertIntoMenuDatabase()
 
 
-@app.route("/v1/flask/test")
-def test():
-	return 'Hello World!'
+# @app.route("/v1/flask/test")
+# def test():
+# 	return 'Hello World!'
 
-@app.route("/v1/flask/item", methods=["POST"])
-def item_check():
-	print("1", request.get_json())
-	request.get_json()
-	utterance = request.get_json()["order_utterance"]
-	parsedUtterance = json.loads(fetch(utterance))
-	print(parsedUtterance)
-	finalResult = jsonify(findIntent(parsedUtterance))
-	print(finalResult)
-	return finalResult
+# @app.route("/v1/flask/item", methods=["POST"])
+# def item_check():
+# 	print("1", request.get_json())
+# 	request.get_json()
+# 	utterance = request.get_json()["order_utterance"]
+# 	parsedUtterance = json.loads(fetch(utterance))
+# 	print(parsedUtterance)
+# 	finalResult = jsonify(findIntent(parsedUtterance))
+# 	print(finalResult)
+# 	return finalResult
 
 
 
-if __name__ == '__main__':
-    app.run(host="flaskapp", port=80, debug=False)
+# if __name__ == '__main__':
+#     app.run(host="flaskapp", port=80, debug=False)

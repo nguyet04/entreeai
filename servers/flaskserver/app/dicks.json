@@ -1,0 +1,46 @@
+{
+    "food": [
+        {  
+            "name": "deluxe",
+            "other_names": ["dick's deluxe", "dicks deluxe", "a deluxe", "deluxes"],
+            "price": 3.40
+
+        },
+        {   
+            "name":"fries",
+            "other_names": ["french fries", "some fries", "frenchfries", "chips"],
+            "price": 1.90
+        },
+        {
+            "name": "special",
+            "other_names": ["dick's special", "dicks special", "a special", "specials"],
+            "price": 2.20
+        },
+        {
+            "name": "hamburger",
+            "other_names": ["hamburgers", "burger", "ham burger", "burgers", "ham burgers", "regular hamburger", "regular hamburgers", "regular burger", "plain burger", "plain hamburger"],
+            "price": 1.60
+        },
+        {
+            "name": "cheeseburger",
+            "other_names": ["cheeseburgers", "cheese burger", "cheese burgers"],
+            "price": 1.90
+        },
+        {
+            "name":"milkshake",
+            "other_names": ["milkshake", "shakes", "milkshakes", "shake"],
+            "flavors": ["strawberry", "chocolate", "vanilla"],
+            "price": 2.70
+        },
+        {
+            "name":"soda",
+            "other_names": ["fanta", "coke", "diet coke", "lemonade", "root beer", "sprite"],
+            "price": 2.11,
+            "units": [
+                {"name":"small", "price":1.77},
+                {"name":"medium", "price":2.11},
+                {"name":"large", "price":2.38}
+            ]
+        }
+    ]
+}

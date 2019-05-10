@@ -18,8 +18,8 @@ cd ../app
 docker rm -f flaskapp
 docker rm -f flaskdb
 
-# docker network rm sharednetwork
-# docker network create sharednetwork
+docker network rm sharednetwork
+docker network create sharednetwork
 
 cd ../../gateway
 ./deploy.sh
